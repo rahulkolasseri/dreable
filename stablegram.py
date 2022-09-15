@@ -1,4 +1,4 @@
-import os, logging, random
+import os, logging, random, time
 from uuid import uuid4
 from telegram import Bot, Update, error, InlineQueryResultPhoto
 from telegram.ext import CommandHandler, MessageHandler, filters, ContextTypes, ApplicationBuilder, InlineQueryHandler
@@ -44,13 +44,17 @@ async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 if __name__ == '__main__':
+    print("Starting bot...")
+    start_time = time.time()
+
     application = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
 
     replier_handler = MessageHandler(filters.TEXT, replier)
-
     inline_handler = InlineQueryHandler(inliner)
 
     application.add_handler(replier_handler)
     application.add_handler(inline_handler)
 
+    print(f"Starting polling...[{time.time() - start_time:.5f}s]")
+    
     application.run_polling()
