@@ -51,6 +51,9 @@ async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 if __name__ == '__main__':
+    print("Starting AUTOMATIC1111 launch checks...")
+#    import 
+
     print("Starting bot...")
     start_time = time.time()
 
