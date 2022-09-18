@@ -25,7 +25,8 @@ modules.scripts.load_scripts(os.path.join(script_path, "scripts"))
 
 shared.sd_model = modules.sd_models.load_model()
 
-def text2image(prompt, w=512, h=512) -> None:
+def text2image(prompt, w=320, h=320, steps=20, batch_size=2, cfg=7.0, seed=-1, sampler=0) -> None:
     with threading.Lock():
-        images, js, info = modules.txt2img.txt2img(prompt, "", "", "", 20, 0, False, False, 1, 2, 7.0, -1, -1, 0.0, 0.0, 0.0, w, h, 0)
+        images, js, info = modules.txt2img.txt2img(prompt, "", "", "", steps, sampler, False, False, 1, batch_size, cfg, seed, -1, 0.0, 0.0, 0.0, w, h, 0)
+    #print(info)
     return images
