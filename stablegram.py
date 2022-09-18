@@ -1,4 +1,4 @@
-import os, logging, random, time, sys
+import os, logging, random, time, sys, shlex
 from uuid import uuid4
 from io import BytesIO
 from telegram import Bot, Update, error, InlineQueryResultCachedPhoto
@@ -21,16 +21,22 @@ async def replier(update: Update, context: ContextTypes.DEFAULT_TYPE):
         #messagecontent = update.message.text
         await context.bot.send_message(chat_id=update.effective_chat.id, text="hec")
 
-async def photoUpload(photoMems, prompt):
+async def photoCreateUpload(prompt):
     if prompt in photoLog.keys():
         return photoLog[prompt]
     else:
         photoList = []
-        for i in range(2):
-            photoMem = photoMems[i]
-            uploadedPhoto = await bot.send_photo(chat_id=os.getenv("CHATID"), photo=photoMem, caption=prompt)
-            photoList.append(uploadedPhoto)
-        photoLog[prompt] = photoList
+        images = apiStable.text2image(prompt)
+        with BytesIO() as image1, BytesIO() as image2:
+            photoMems = [image1, image2]
+            for i in range(2):
+                images[i].save(photoMems[i], format="JPEG", quality=97)
+                photoMems[i].seek(0)
+            for i in range(2):
+                photoMem = photoMems[i]
+                uploadedPhoto = await bot.send_photo(chat_id=os.getenv("CHATID"), photo=photoMem, caption=prompt)
+                photoList.append(uploadedPhoto)
+            photoLog[prompt] = photoList
         return photoList
 
 async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -40,14 +46,7 @@ async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     else:
         query = "hello jungle"
-        images = apiStable.text2image(query)
-        with BytesIO() as image1, BytesIO() as image2:
-            photoMems = [image1, image2]
-            for i in range(2):
-                images[i].save(photoMems[i], format="JPEG", quality=97)
-                photoMems[i].seek(0)
-            
-            photoList = await photoUpload([image1, image2], query)
+        photoList = await photoCreateUpload(query)
 
     results = [
                 InlineQueryResultCachedPhoto(
@@ -66,6 +65,7 @@ async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 if __name__ == '__main__':
     print("Starting AUTOMATIC1111 launch checks...")
     sys.path += ['../../stablediff/stable-diffusion-webui/']
+    sys.argv += shlex.split("--opt-split-attention")
     import launch
     import apiStable
 
