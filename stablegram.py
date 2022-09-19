@@ -1,7 +1,7 @@
-import os, logging, random, time, sys, shlex
+import os, logging, time, sys
 from uuid import uuid4
 from io import BytesIO
-from telegram import Bot, Update, error, InlineQueryResultCachedPhoto, InputMediaPhoto
+from telegram import Bot, Update, InlineQueryResultCachedPhoto, InputMediaPhoto
 from telegram.ext import CommandHandler, MessageHandler, filters, ContextTypes, ApplicationBuilder, InlineQueryHandler
 
 from dotenv import load_dotenv
@@ -21,6 +21,8 @@ async def replier(update: Update, context: ContextTypes.DEFAULT_TYPE):
         messagecontent = update.message.text
         if messagecontent == "exit" and fromuser == "omgitsrahul":
             await bot.send_message(chat_id=update.effective_chat.id, text="exiting")
+            with open(r"C:\Users\rahul\Documents\Python Scripts\dreable\.env", "a") as f: 
+                f.write(f"\nRAHUL_CHAT_ID = {update.effective_chat.id}")
             sys.exit()
 
         await context.bot.send_message(chat_id=update.effective_chat.id, text="hec")
@@ -41,19 +43,20 @@ async def photoCreateUpload(prompt):
                     prompt[i] = float(prompt[i])
             except ValueError:
                 pass
-        images = apiStable.text2image(*prompt)
-        #images = apiStable.text2image(prompt,w=512, h=512,batch_size=4, steps=20, cfg=7.0, seed=-1, sampler=0)
+        images, vram_info = apiStable.text2image(*prompt)
+
         imageCreationTime = time.time() - start_time
         print(f"image creation took {imageCreationTime:.5f} seconds")
+        print(vram_info)
 
         start_time = time.time()
         photoMems = []
         for i in range(len(images)):
             with BytesIO() as tempfile:
-                images[i].save(tempfile, format="JPEG", quality=97)
+                images[i].save(tempfile, format="JPEG", quality=90, optimize=True, progressive=True)
                 size = tempfile.tell()
                 tempfile.seek(0)
-                photoMems.append(InputMediaPhoto(media=tempfile, caption=prompt + f" {size/1000:.3f} KB {imageCreationTime:.3f}s"))
+                photoMems.append(InputMediaPhoto(media=tempfile, caption=prompt[0] + f" {size/1000:.3f} KB {imageCreationTime:.3f}s"))
         print(f"image saving took {time.time() - start_time:.5f} seconds")
 
         # with BytesIO() as image1: , BytesIO() as image2:
@@ -65,7 +68,7 @@ async def photoCreateUpload(prompt):
         start_time = time.time()        
         uploadedPhotoSet = await bot.sendMediaGroup(chat_id=os.getenv("CHAT_ID"), media=photoMems)
         print(f"image uploading took {time.time() - start_time:.5f} seconds")
-        photoLog[prompt] = uploadedPhotoSet
+        photoLog["^".join(prompt)] = uploadedPhotoSet
         return uploadedPhotoSet
 
 async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -101,6 +104,14 @@ async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print("query: " + query + f" answered in {time.time() - start_time:.5f} seconds")
     await update.inline_query.answer(results)
 
+async def closePlease(application: ApplicationBuilder):
+    os._exit(0)
+
+async def startup(application: ApplicationBuilder):
+    await bot.sendMessage(chat_id=os.getenv("RAHUL_CHAT_ID"), text= f"Bot started[{time.time() - start_time}]" )
+
+
+########################################################################################
 
 if __name__ == '__main__':
     #print("Starting AUTOMATIC1111 launch checks...")
@@ -115,12 +126,15 @@ if __name__ == '__main__':
 
     print("Running first query to warm up the model")
 
-    apiStable.text2image("Hello world", 512, 512, batch_size=4)
+    apiStable.text2image("Hello world", w=320, h=320, batch_size=4, steps=15, cfg=7.0, seed=-1, sampler=0)
 
     print("Starting bot...")
     
 
-    application = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
+    application = ApplicationBuilder()
+    application.token(os.getenv("TELEGRAM_TOKEN"))
+    application.post_shutdown(closePlease)
+    application = application.build()
     bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
 
     photoLog = {}
@@ -133,9 +147,9 @@ if __name__ == '__main__':
 
     print(f"Starting polling...[{time.time() - start_time:.5f}s]")
 
-    bot.sendMessage(chat_id=os.getenv("CHAT_ID"), text="Bot started")
+    
     
     application.run_polling()
 
-    print("Bot stopped")
-    os._exit(0)
+    # print("Bot stopped")
+    # os._exit(0)
