@@ -20,7 +20,8 @@ async def replier(update: Update, context: ContextTypes.DEFAULT_TYPE):
         fromuser = update.message.from_user.username
         messagecontent = update.message.text
         if messagecontent == "exit" and fromuser == "omgitsrahul":
-            os._exit(0)
+            await bot.send_message(chat_id=update.effective_chat.id, text="exiting")
+            sys.exit()
 
         await context.bot.send_message(chat_id=update.effective_chat.id, text="hec")
 
@@ -30,14 +31,30 @@ async def photoCreateUpload(prompt):
         return photoLog[prompt]
     else:
         #print("new!")
-        images = apiStable.text2image(prompt,w=320, h=320,batch_size=4, steps=20, cfg=7.0, seed=-1, sampler=0)
-        photoMems = []
+        start_time = time.time()
+        prompt = prompt.split("^")
+        for i in range(len(prompt)):
+            try:
+                if i!=5:
+                    prompt[i] = int(prompt[i])
+                else:
+                    prompt[i] = float(prompt[i])
+            except ValueError:
+                pass
+        images = apiStable.text2image(*prompt)
+        #images = apiStable.text2image(prompt,w=512, h=512,batch_size=4, steps=20, cfg=7.0, seed=-1, sampler=0)
+        imageCreationTime = time.time() - start_time
+        print(f"image creation took {imageCreationTime:.5f} seconds")
 
+        start_time = time.time()
+        photoMems = []
         for i in range(len(images)):
             with BytesIO() as tempfile:
                 images[i].save(tempfile, format="JPEG", quality=97)
+                size = tempfile.tell()
                 tempfile.seek(0)
-                photoMems.append(InputMediaPhoto(media=tempfile, caption=prompt))
+                photoMems.append(InputMediaPhoto(media=tempfile, caption=prompt + f" {size/1000:.3f} KB {imageCreationTime:.3f}s"))
+        print(f"image saving took {time.time() - start_time:.5f} seconds")
 
         # with BytesIO() as image1: , BytesIO() as image2:
         #     photoMems.append(image1)
@@ -45,8 +62,9 @@ async def photoCreateUpload(prompt):
         #         photoMems[i].seek(0)
         #         photoMems[i] = InputMediaPhoto(photoMems[i])
         
-        
+        start_time = time.time()        
         uploadedPhotoSet = await bot.sendMediaGroup(chat_id=os.getenv("CHAT_ID"), media=photoMems)
+        print(f"image uploading took {time.time() - start_time:.5f} seconds")
         photoLog[prompt] = uploadedPhotoSet
         return uploadedPhotoSet
 
@@ -85,19 +103,19 @@ async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 if __name__ == '__main__':
-    print("Starting AUTOMATIC1111 launch checks...")
-    start_time = time.time()
+    #print("Starting AUTOMATIC1111 launch checks...")
+    
     sys.path += ['../../stablediff/stable-diffusion-webui/']
-    sys.argv += shlex.split("--opt-split-attention")
-    import launch
+    os.chdir('../../stablediff/stable-diffusion-webui/')
+    #import launch
     
     print("Loading up Stable Diffusion")
-
+    start_time = time.time()
     import apiStable
 
     print("Running first query to warm up the model")
 
-    apiStable.text2image("Hello world", 512, 512)
+    apiStable.text2image("Hello world", 512, 512, batch_size=4)
 
     print("Starting bot...")
     
@@ -114,5 +132,10 @@ if __name__ == '__main__':
     application.add_handler(inline_handler)
 
     print(f"Starting polling...[{time.time() - start_time:.5f}s]")
+
+    bot.sendMessage(chat_id=os.getenv("CHAT_ID"), text="Bot started")
     
     application.run_polling()
+
+    print("Bot stopped")
+    os._exit(0)
