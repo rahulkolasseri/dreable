@@ -5,6 +5,9 @@ __pycache__/
 .env
 /venv
 
+#Log files
+*.log
+
 #VSCode Workspace
 *.code-workspace
 .vscode/
