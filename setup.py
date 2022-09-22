@@ -36,4 +36,3 @@ def setUp():
     sys.path += [cwd+'/A1111NoUI']
     print (sys.path[-1])
     run("../venv/Scripts/Python.exe launch.py")
-    os.chdir(cwd)

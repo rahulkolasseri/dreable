@@ -109,7 +109,7 @@ async def startup(application: ApplicationBuilder, start_time=time.time()):
 
 
 if __name__ == "__main__":
-
+    cwd = os.getcwd()
     logging.basicConfig(
     filename = "debuglog.log",
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -123,8 +123,9 @@ if __name__ == "__main__":
     
     print("Loading up Stable Diffusion")
     start_time = time.time()
-    sys.path += ["./A1111NoUI"]
-    os.chdir("./A1111NoUI")
+    os.chdir(cwd+"/A1111NoUI/")
+    sys.path += [cwd+'/A1111NoUI']
+    print(os.getcwd())
     import apiStable
 
     print("Running first query to warm up the model")
