@@ -1,17 +1,9 @@
-import os, logging, time, sys
+import logging
+import os, sys, time
 from uuid import uuid4
 from io import BytesIO
 from telegram import Bot, Update, InlineQueryResultCachedPhoto, InputMediaPhoto
 from telegram.ext import CommandHandler, MessageHandler, filters, ContextTypes, ApplicationBuilder, InlineQueryHandler
-
-from dotenv import load_dotenv
-load_dotenv()
-
-logging.basicConfig(
-    filename = "errlog.log",
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG
-)
 
 
 async def replier(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -21,8 +13,8 @@ async def replier(update: Update, context: ContextTypes.DEFAULT_TYPE):
         messagecontent = update.message.text
         if messagecontent == "exit" and fromuser == "omgitsrahul":
             await bot.send_message(chat_id=update.effective_chat.id, text="exiting")
-            with open(r"C:\Users\rahul\Documents\Python Scripts\dreable\.env", "a") as f: 
-                f.write(f"\nRAHUL_CHAT_ID = {update.effective_chat.id}")
+            # with open(r"C:\Users\rahul\Documents\Python Scripts\dreable\.env", "a") as f: 
+            #     f.write(f"\nOWNER_CHAT_ID = {update.effective_chat.id}")
             sys.exit()
 
         await context.bot.send_message(chat_id=update.effective_chat.id, text="hec")
@@ -107,21 +99,32 @@ async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def closePlease(application: ApplicationBuilder):
     os._exit(0)
 
-async def startup(application: ApplicationBuilder):
-    await bot.sendMessage(chat_id=os.getenv("RAHUL_CHAT_ID"), text= f"Bot started[{time.time() - start_time}]" )
+async def startup(application: ApplicationBuilder, start_time=time.time()):
+    now = time.time()
+    if start_time - now < 1:
+        timeMsg = ""
+    else:
+        timeMsg = f" in {now - start_time:.2f} seconds"
+    await bot.sendMessage(chat_id=os.getenv("OWNER_CHAT_ID"), text= f"Bot started{timeMsg}" )
 
 
-########################################################################################
+if __name__ == "__main__":
 
-if __name__ == '__main__':
-    #print("Starting AUTOMATIC1111 launch checks...")
-    
-    sys.path += ['../../stablediff/stable-diffusion-webui/']
-    os.chdir('../../stablediff/stable-diffusion-webui/')
-    #import launch
+    logging.basicConfig(
+    filename = "debuglog.log",
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG)
+
+
+    application = ApplicationBuilder()
+    application.token(os.getenv("TELEGRAM_TOKEN"))
+    application.post_shutdown(closePlease)
+    application = application.build()
     
     print("Loading up Stable Diffusion")
     start_time = time.time()
+    sys.path += ["./A1111NoUI"]
+    os.chdir("./A1111NoUI")
     import apiStable
 
     print("Running first query to warm up the model")
@@ -130,11 +133,6 @@ if __name__ == '__main__':
 
     print("Starting bot...")
     
-
-    application = ApplicationBuilder()
-    application.token(os.getenv("TELEGRAM_TOKEN"))
-    application.post_shutdown(closePlease)
-    application = application.build()
     bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
 
     photoLog = {}
@@ -150,6 +148,3 @@ if __name__ == '__main__':
     
     
     application.run_polling()
-
-    # print("Bot stopped")
-    # os._exit(0)
