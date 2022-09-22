@@ -22,7 +22,7 @@ def setUp():
         run("python -m venv venv")
     
     print("Checking A1111NoUI submodule")
-    run("git submodule update")
+    run("git submodule update --init --recursive")
 
     print("Installing PTB requirements")
     run("./venv/Scripts/Python.exe -m pip install -r requirements.txt -q")
