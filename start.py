@@ -31,6 +31,7 @@ if __name__ == '__main__':
     load_dotenv()
     
     setUp()
+    correctDir(move=True)
     run("./venv/Scripts/Python.exe stablegram.py")
 
 
