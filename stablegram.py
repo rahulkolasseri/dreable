@@ -68,7 +68,7 @@ async def photoCreateUpload(prompt):
         start_time = time.time()        
         uploadedPhotoSet = await bot.sendMediaGroup(chat_id=os.getenv("CHAT_ID"), media=photoMems)
         print(f"image uploading took {time.time() - start_time:.5f} seconds")
-        photoLog["^".join(prompt)] = uploadedPhotoSet
+        photoLog["^".join(str(prompt))] = uploadedPhotoSet
         return uploadedPhotoSet
 
 async def inliner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
